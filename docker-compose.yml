@@ -1,0 +1,31 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://crime_user:crime_password@db:5432/crime_intelligence
+      FLASK_CONFIG: development
+      FLASK_RUN_HOST: 0.0.0.0
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: crime_intelligence
+      POSTGRES_USER: crime_user
+      POSTGRES_PASSWORD: crime_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crime_user -d crime_intelligence"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

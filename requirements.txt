@@ -1,0 +1,16 @@
+Flask>=3.0,<4.0
+Flask-SQLAlchemy>=3.1,<4.0
+Flask-Migrate>=4.0,<5.0
+Flask-Login>=0.6,<1.0
+Flask-WTF>=1.2,<2.0
+python-dotenv>=1.0,<2.0
+psycopg[binary]>=3.1,<4.0
+gunicorn>=21.2,<24.0
+PyJWT>=2.8,<3.0
+numpy>=1.26,<3.0
+pandas>=2.1,<4.0
+matplotlib>=3.8,<4.0
+scikit-learn>=1.4,<2.0
+networkx>=3.2,<4.0
+openpyxl>=3.1,<4.0
+reportlab>=4.0,<5.0
