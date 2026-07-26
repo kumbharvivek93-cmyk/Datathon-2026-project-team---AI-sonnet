@@ -1,0 +1,5 @@
+"""Operational report generation views."""
+
+from .routes import reports_bp
+
+__all__ = ["reports_bp"]
