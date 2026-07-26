@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="command-alert">
+  <div class="command-alert-copy">
+    <span class="signal-label"><i class="bi bi-broadcast-pin"></i> Priority signal · live intelligence</span>
+    <h2>{{ metrics.most_active_district }} requires active monitoring.</h2>
+    <p>Current forecasting indicates elevated operational demand. Review the latest cases and coordinate deployment response.</p>
+    <div class="command-alert-actions"><a class="btn btn-primary" href="/prediction">Review deployment plan</a><a class="btn btn-alert-secondary" href="/analytics">Why this alert?</a></div>
+  </div>
+  <div class="risk-orb"><div><strong>{{ metrics.crime_heat_index|round|int }}%</strong><span>Risk score</span></div></div>
+</section>
+
+<section class="metric-grid">{% for label, value in [('Active alerts',metrics.pending_cases),('High-risk zones',metrics.repeat_offenders),('Predicted incidents',metrics.total_crimes),('Linked entities',metrics.solved_cases)] %}<article class="metric-card"><span>{{ label }}</span><strong>{{ '%02d'|format(value) if value < 100 else value }}</strong></article>{% endfor %}</section>
+
+<div class="row g-4 dashboard-detail"><div class="col-lg-8"><div class="card"><div class="card-body"><h5>Monthly incident trend</h5><canvas id="trend"></canvas></div></div></div><div class="col-lg-4"><div class="card"><div class="card-body"><h5>Crime categories</h5><canvas id="types"></canvas></div></div></div><div class="col-lg-7"><div class="card"><div class="card-body"><h5>Live operations map</h5><div id="map" style="height:360px"></div></div></div></div><div class="col-lg-5"><div class="card"><div class="card-body"><h5>Latest intelligence</h5>{% for crime in recent_crimes %}<a class="d-block py-2 border-bottom text-decoration-none" href="/crimes/{{crime.id}}"><strong>{{crime.crime_number}}</strong><br><small>{{crime.crime_type}} · {{crime.district}} · {{crime.status}}</small></a>{% else %}<p class="text-muted">No records seeded yet.</p>{% endfor %}</div></div></div></div>
+{% endblock %}
+{% block scripts %}<script>const c={{chart_data|tojson}}, m={{map_records|tojson}};new Chart(document.querySelector('#trend'),{type:'line',data:{labels:c.monthly_labels,datasets:[{label:'Incidents',data:c.monthly_values,borderColor:'#3175ed',backgroundColor:'rgba(49,117,237,.12)',fill:true,tension:.35}]},options:{plugins:{legend:{display:false}}}});new Chart(document.querySelector('#types'),{type:'doughnut',data:{labels:c.type_labels,datasets:[{data:c.type_values,backgroundColor:['#3175ed','#7d1f42','#58c8c2','#eeb765','#6677b8']}]},options:{plugins:{legend:{position:'bottom'}}}});let map=L.map('map').setView([13.4,76.5],7);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);m.forEach(x=>L.circleMarker([x.lat,x.lng],{radius:5,color:'#274f9d',fillColor:'#3175ed',fillOpacity:.8}).bindPopup(`<b>${x.crime_number}</b><br>${x.crime_type}`).addTo(map));</script>{% endblock %}
