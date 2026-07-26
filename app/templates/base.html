@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a1022">
+  <title>{% block title %}{{ page_title|default('Crime Intelligence') }} · KSP{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Oxanium:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="app-shell">
+  {% set current_path = request.path if request is defined else '' %}
+  <div class="app-backdrop d-lg-none" data-sidebar-toggle></div>
+  <aside class="sidebar" id="appSidebar" aria-label="Primary navigation">
+    <div class="sidebar-brand">
+      <a href="/" class="brand-link text-decoration-none">
+        <span class="brand-wordmark">SECURE<span>GRID</span></span>
+      </a>
+      <button class="btn btn-link sidebar-close d-lg-none" type="button" data-sidebar-toggle aria-label="Close menu">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-scroll">
+      <p class="nav-caption">Operations</p>
+      <nav class="nav flex-column sidebar-nav">
+        <a class="nav-link {% if current_path == '/' %}active{% endif %}" href="/">
+          <i class="bi bi-grid-1x2-fill"></i><span>Command centre</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/crimes') %}active{% endif %}" href="/crimes">
+          <i class="bi bi-journal-text"></i><span>Crime registry</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/fir') %}active{% endif %}" href="/fir/new">
+          <i class="bi bi-file-earmark-plus"></i><span>File FIR</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/search') %}active{% endif %}" href="/search">
+          <i class="bi bi-search"></i><span>Intelligence search</span>
+        </a>
+      </nav>
+
+      <p class="nav-caption mt-4">Analysis</p>
+      <nav class="nav flex-column sidebar-nav">
+        <a class="nav-link {% if current_path.startswith('/analytics') %}active{% endif %}" href="/analytics">
+          <i class="bi bi-bar-chart-line-fill"></i><span>Pattern analytics</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/network') %}active{% endif %}" href="/network">
+          <i class="bi bi-diagram-3-fill"></i><span>Criminal networks</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/prediction') %}active{% endif %}" href="/prediction">
+          <i class="bi bi-cpu-fill"></i><span>AI prediction</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/sociology') %}active{% endif %}" href="/sociology">
+          <i class="bi bi-people-fill"></i><span>Social indicators</span>
+        </a>
+        <a class="nav-link {% if current_path.startswith('/comparison') %}active{% endif %}" href="/comparison">
+          <i class="bi bi-bar-chart-steps"></i><span>Crime comparison</span>
+        </a>
+      </nav>
+
+      <p class="nav-caption mt-4">Outputs</p>
+      <nav class="nav flex-column sidebar-nav">
+        <a class="nav-link {% if current_path.startswith('/reports') %}active{% endif %}" href="/reports">
+          <i class="bi bi-file-earmark-bar-graph-fill"></i><span>Reports</span>
+        </a>
+      </nav>
+    </div>
+
+    <div class="sidebar-status">
+      <span class="status-dot"></span>
+      <span>Secure system online</span>
+      <small>SCRB · KSP</small>
+    </div>
+  </aside>
+
+  <div class="app-content">
+    <header class="topbar">
+      <div class="topbar-start">
+        <button class="btn icon-btn d-lg-none" type="button" data-sidebar-toggle aria-label="Open menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div>
+          <p class="eyebrow mb-0">{% block eyebrow %}Good morning, Officer.{% endblock %}</p>
+          <h1 class="topbar-title mb-0">{% block page_heading %}System live{% endblock %}</h1>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        {% if current_user is defined and current_user.is_authenticated %}
+          <a class="btn btn-topbar d-none d-sm-inline-flex" href="/search"><i class="bi bi-search"></i><span>Search</span></a>
+        {% else %}
+          <a class="btn btn-topbar d-none d-sm-inline-flex" href="{{ url_for('auth.login') }}">Login</a>
+        {% endif %}
+        <button class="btn btn-topbar d-none d-md-inline-flex" type="button"><span>State Selector</span><i class="bi bi-chevron-down"></i></button>
+        <button class="btn icon-btn notification-btn" type="button" aria-label="Notifications" data-bs-toggle="offcanvas" data-bs-target="#notificationsPanel">
+          <i class="bi bi-bell"></i><span class="notification-pip"></span>
+        </button>
+        <div class="dropdown">
+          <button class="user-control dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <span class="avatar">
+              {% if current_user is defined and current_user.is_authenticated %}
+                {{ current_user.name|default(current_user.username|default('O'), true)|string|first|upper }}
+              {% else %}O{% endif %}
+            </span>
+            <span class="d-none d-md-block text-start">
+              <strong>{% if current_user is defined and current_user.is_authenticated %}{{ current_user.name|default(current_user.username|default('Officer'), true) }}{% else %}Officer Console{% endif %}</strong>
+              <small>{% if current_user is defined and current_user.is_authenticated %}{{ current_user.role|default('Authorized user', true)|replace('_', ' ')|title }}{% else %}Secure access{% endif %}</small>
+            </span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark shadow">
+            <li><a class="dropdown-item" href="/search"><i class="bi bi-person-vcard me-2"></i>My activity</a></li>
+            <li><hr class="dropdown-divider"></li>
+            {% if current_user is defined and current_user.is_authenticated %}
+              <li><form action="{{ url_for('auth.logout') }}" method="post" class="m-0"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="dropdown-item text-warning" type="submit"><i class="bi bi-box-arrow-right me-2"></i>Sign out</button></form></li>
+            {% else %}
+              <li><a class="dropdown-item text-warning" href="{{ url_for('auth.login') }}"><i class="bi bi-box-arrow-in-right me-2"></i>Sign in</a></li>
+            {% endif %}
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main class="main-view">
+      {% block breadcrumbs %}{% endblock %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category in ['success', 'warning', 'danger', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  <div class="offcanvas offcanvas-end notification-panel" tabindex="-1" id="notificationsPanel" aria-labelledby="notificationsTitle">
+    <div class="offcanvas-header">
+      <div>
+        <p class="eyebrow mb-1">Live desk</p>
+        <h5 class="offcanvas-title" id="notificationsTitle">Notifications</h5>
+      </div>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <div class="notification-item">
+        <span class="notification-icon text-primary"><i class="bi bi-radar"></i></span>
+        <div><strong>Monitoring active</strong><p>Use the dashboard filters to focus the operational picture.</p><small>System</small></div>
+      </div>
+      <div class="empty-state compact">
+        <i class="bi bi-bell-slash"></i>
+        <p>No new priority alerts.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+  <script>
+    window.KSP = window.KSP || {};
+    window.KSP.readJson = function (id, fallback) {
+      var element = document.getElementById(id);
+      if (!element) return fallback;
+      try { return JSON.parse(element.textContent || '{}'); } catch (error) { return fallback; }
+    };
+    window.KSP.formatNumber = function (value) {
+      return new Intl.NumberFormat('en-IN').format(Number(value || 0));
+    };
+    document.querySelectorAll('[data-sidebar-toggle]').forEach(function (button) {
+      button.addEventListener('click', function () { document.body.classList.toggle('sidebar-open'); });
+    });
+    document.querySelectorAll('.sidebar .nav-link').forEach(function (link) {
+      link.addEventListener('click', function () { document.body.classList.remove('sidebar-open'); });
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
